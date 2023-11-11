@@ -10,10 +10,11 @@ class ItemDataContract(Contract):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.expected_data = None
         self.file_path = args[1]
 
     def adjust_request_args(self, args):
-        with open(Path.cwd() / "spiders" / self.file_path) as f:
+        with open(Path(__file__).resolve().parent / "spiders" / self.file_path) as f:
             self.expected_data = json.load(f)
         return args
 

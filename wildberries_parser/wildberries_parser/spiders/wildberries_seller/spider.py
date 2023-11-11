@@ -5,6 +5,8 @@ from .parser import WildberriesSellerParser
 
 
 class WildberriesBrandParser(scrapy.Spider):
+    """Spider to scrape seller information from Wildberries."""
+
     name = "wildberries_seller"
     allowed_domains = ["wildberries.ru", "static-basket-01.wb.ru"]
 
@@ -12,6 +14,8 @@ class WildberriesBrandParser(scrapy.Spider):
     seller_logo_link = "https://static-basket-01.wb.ru/vol1/crm-bnrs/shops/{}_logo.webp"
 
     def start_requests(self):
+        """Initial request to start scraping seller information."""
+
         start_seller_id = 1
         yield scrapy.Request(
             self.start_link.format(1),
@@ -20,6 +24,9 @@ class WildberriesBrandParser(scrapy.Spider):
         )
 
     def parse(self, response: Response, **kwargs):
+        """
+        Main parsing method to handle seller data response.
+        """
         response_meta = response.meta
         seller_id = response_meta["seller_id"]
         while True:
@@ -34,6 +41,8 @@ class WildberriesBrandParser(scrapy.Spider):
 
     def parse_seller(self, response):
         """
+        Parse seller information and initiate request for seller logo.
+
         @url https://www.wildberries.ru/webapi/seller/data/short/1
         @returns requests 1 1
         @item_meta {"seller_id": 2}
@@ -51,9 +60,11 @@ class WildberriesBrandParser(scrapy.Spider):
 
     def parse_seller_with_logo(self, response):
         """
+        Append seller logo to the data and yield seller data.
+
         @url https://www.wildberries.ru/webapi/seller/data/short/56538
         @returns items 1 1
-        @item_data wildberries_seller/tests/result_2.json
+        @item_data wildberries_seller/tests/result_1.json
         @item_meta {"seller_data":{"id":56538,"name":"ООО ТК АЗУР","fineName":"ТК АЗУР","ogrn":"1116674010310","trademark":"ТК Азур","legalAddress":"620146, Свердловская обл., г. Екатеринбург, ул. Волгоградская, д.178, офис 14","isUnknown":false}}
         """
         seller_data = response.meta["seller_data"]
@@ -61,9 +72,11 @@ class WildberriesBrandParser(scrapy.Spider):
         yield WildberriesSellerParser.parse_seller(seller_data)
 
     def errback_seller(self, failure):
+        """Close spider if seller not found."""
         if failure.value.response.status == 404:
             self.crawler.engine.close_spider(self, "Seller not found, stopping spider.")
 
     def errback_logo(self, failure):
+        """If logo not found, yield seller data with logo."""
         self.logger.error(f'Logo not found for seller {failure.request.meta["seller_data"]["id"]}')
         yield WildberriesSellerParser.parse_seller(failure.value.response.meta["seller_data"])
